@@ -54,7 +54,7 @@ export class GraphViewer {
 
         const camera = new PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
         scene.add(camera);
-        camera.position.set(0, 150, 400);
+        camera.position.set(24, 50, 20);
         camera.up = new Vector3(0, 0, 1);
         camera.lookAt(scene.position);
 
