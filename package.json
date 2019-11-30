@@ -4,15 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "parcel dev index.html",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "three.js": "^0.77.1"
-  },
   "devDependencies": {
     "parcel-bundler": "^1.12.4",
     "typescript": "^3.7.2"
+  },
+  "dependencies": {
+    "three": "^0.111.0",
+    "three-orbitcontrols": "^2.110.1"
   }
 }
