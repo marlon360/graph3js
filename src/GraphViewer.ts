@@ -29,6 +29,8 @@ export class GraphViewer {
     renderer: WebGLRenderer;
     controls: OrbitControls;
 
+    graphMesh = null;
+
     constructor(container: HTMLElement) {
 
         this.scene = new Scene();
@@ -112,10 +114,10 @@ export class GraphViewer {
     }) {
 
         // set default values
-        const xMin = setting && setting.xMin || -100,
-              xMax = setting && setting.xMax || 100,
-              yMin = setting && setting.yMin || -100,
-              yMax = setting && setting.yMin || 100,
+        const xMin = setting && setting.xMin || -10,
+              xMax = setting && setting.xMax || 10,
+              yMin = setting && setting.yMin || -10,
+              yMax = setting && setting.yMin || 10,
               segments = setting && setting.segments || 40;
         
         // calculate ranges
@@ -166,8 +168,13 @@ export class GraphViewer {
         const wireMaterial = this.createWireMaterial(segments);
         wireMaterial.map.repeat.set(segments, segments);
 
-        const graphMesh = new Mesh(graphGeometry, wireMaterial);
-        this.scene.add(graphMesh);
+        // remove graph if exists
+        if (this.graphMesh) {
+            this.scene.remove(this.graphMesh);
+        }
+
+        this.graphMesh = new Mesh(graphGeometry, wireMaterial);
+        this.scene.add(this.graphMesh);
     }
 
     createWireMaterial(segments: number = 40): MeshBasicMaterial {
