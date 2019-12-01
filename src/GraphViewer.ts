@@ -107,7 +107,7 @@ export class GraphViewer {
         this.renderer.render(this.scene, this.camera);
     }
 
-    public createCurve(func: (x) => Array<number>, setting?: {
+    public createCurve(func: (x) => Array<number> | number, setting?: {
         segments: number,
         radiusSegments: number,
         tubeRadius: number,
@@ -132,7 +132,13 @@ export class GraphViewer {
         CustomPath.prototype.constructor = CustomPath;
         CustomPath.prototype.getPoint = function(t: number) {
             t = t * tRange + tMin;
-            return new Vector3(func(t)[0],func(t)[1],func(t)[2]).multiplyScalar(this.scale);
+
+            if (Array.isArray(func(t))) {
+                return new Vector3(func(t)[0],func(t)[1] || 0,func(t)[2] || 0).multiplyScalar(this.scale);
+            } else {
+                // draw in xz plane a normal graph
+                return new Vector3(t, 0, <number>func(t)).multiplyScalar(this.scale);
+            }
         }
 
         const path = new CustomPath(1);
