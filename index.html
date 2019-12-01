@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,12 +8,21 @@
     <title>Graph</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
-    <div class="text-input">
-        <span>f(x, y) = </span>
-        <input id="func-input" type="text" value="x + y">
-        <button id="func-button" >Draw graph</button>
+    <div class="input-container">
+        <div class="text-input">
+            <span>f(x, y) = </span>
+            <input id="graph-input" type="text" value="x + y">
+            <button id="graph-button">Draw graph</button>
+        </div>
+        <div class="text-input">
+            <span>f(t) = </span>
+            <input id="curve-input" type="text" value="[cos(t), sin(t), t / 4]">
+            <button id="curve-button">Draw curve</button>
+        </div>
     </div>
 </body>
 <script src="main.ts"></script>
+
 </html>

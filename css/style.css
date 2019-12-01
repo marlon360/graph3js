@@ -2,7 +2,7 @@ html, body {
     padding: 0;
     margin: 0;
 }
-.text-input {
+.input-container {
     left: 20px;
     top: 20px;
     padding: 10px;
