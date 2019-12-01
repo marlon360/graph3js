@@ -14,7 +14,9 @@ import {
     TextureLoader,
     RepeatWrapping,
     VertexColors,
-    Vector3, ParametricGeometry, Color, Face3
+    Vector3, ParametricGeometry, Color, Face3,
+    TubeGeometry,
+    Curve
 } from 'three';
 
 import OrbitControls from 'three-orbitcontrols';
@@ -105,7 +107,74 @@ export class GraphViewer {
         this.renderer.render(this.scene, this.camera);
     }
 
-    public createGraph(func: (x,y) => number, setting?: {
+    public createCurve(func: (x) => Array<number>, setting?: {
+        segments: number,
+        radiusSegments: number,
+        tubeRadius: number,
+        tMin: number,
+        tMax: number,
+    }) {
+         // set default values
+         const segments = setting && setting.segments || 100,
+         radiusSegments = setting && setting.radiusSegments || 6,
+         tubeRadius = setting && setting.tubeRadius ||0.1,
+         tMin = setting && setting.tMin || 0,
+         tMax = setting && setting.tMax || 60;
+
+        const tRange = tMax - tMin;
+
+        function CustomPath (scale: number) {
+            Curve.call(this);
+            this.scale = scale;
+        }
+
+        CustomPath.prototype = Object.create(Curve.prototype);
+        CustomPath.prototype.constructor = CustomPath;
+        CustomPath.prototype.getPoint = function(t: number) {
+            t = t * tRange + tMin;
+            return new Vector3(func(t)[0],func(t)[1],func(t)[2]).multiplyScalar(this.scale);
+        }
+
+        const path = new CustomPath(1);
+
+        const tubeGeometry = new TubeGeometry(path, segments, tubeRadius, radiusSegments, false);
+        
+        // vertex colors based on t value
+        // faces are indexed using characters
+        var faceIndices = ['a', 'b', 'c', 'd'];
+        // first, assign colors to vertices as desired
+        for (var s = 0; s <= segments; s++)
+            for (var r = 0; r < radiusSegments; r++) {
+                const vertexIndex = r + s * radiusSegments;
+                const color = new Color(0xffffff);
+                // according to length along curve, repeat once
+                color.setHSL((1 * s / segments) % 1, 1, 0.5);
+                tubeGeometry.colors[vertexIndex] = color;
+            }
+        // copy the colors as necessary to the face's vertexColors array.
+        for (var i = 0; i < tubeGeometry.faces.length; i++) {
+            const face = tubeGeometry.faces[i];
+            const numberOfSides = (face instanceof Face3) ? 3 : 4;
+            for (var j = 0; j < numberOfSides; j++) {
+                const vertexIndex = face[faceIndices[j]];
+                face.vertexColors[j] = tubeGeometry.colors[vertexIndex];
+            }
+        }
+
+        if (this.graphMesh) {
+            this.scene.remove(this.graphMesh);
+        }
+
+        const wireMaterial = this.createWireMaterial(segments);
+        wireMaterial.map.repeat.set(segments, segments);
+        wireMaterial.map.repeat.set(segments, radiusSegments);
+
+        this.graphMesh = new Mesh(tubeGeometry, wireMaterial);
+        this.graphMesh.doubleSided = true;        
+        this.scene.add(this.graphMesh);
+    }
+
+    public createGraph(func: (x, y) => number, setting?: {
         xMin: number,
         xMax: number,
         yMin: number,
@@ -114,16 +183,16 @@ export class GraphViewer {
     }) {
 
         // set default values
-        const xMin = setting && setting.xMin || -10,
-              xMax = setting && setting.xMax || 10,
-              yMin = setting && setting.yMin || -10,
-              yMax = setting && setting.yMin || 10,
-              segments = setting && setting.segments || 40;
-        
+        const xMin = setting && setting.xMin || -10,
+            xMax = setting && setting.xMax || 10,
+            yMin = setting && setting.yMin || -10,
+            yMax = setting && setting.yMin || 10,
+            segments = setting && setting.segments || 40;
+
         // calculate ranges
         const xRange = xMax - xMin;
         const yRange = yMax - yMin;
-        
+
         // x and y from 0 to 1
         const meshFunction = (x, y, vec3) => {
             // map x,y to range
@@ -142,7 +211,7 @@ export class GraphViewer {
         const zMin = graphGeometry.boundingBox.min.z;
         const zMax = graphGeometry.boundingBox.max.z;
         const zRange = zMax - zMin;
-               
+
         // first, assign colors to vertices
         for (var i = 0; i < graphGeometry.vertices.length; i++) {
             const point = graphGeometry.vertices[i];
