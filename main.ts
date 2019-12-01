@@ -1,18 +1,19 @@
 import { GraphViewer } from './src/GraphViewer';
 import { Parser } from 'expr-eval';
+import { MathParser } from './src/MathParser';
 
 const graphViewer = new GraphViewer(document.body);
 
 function drawGraph() {
     const funcInputElement = document.getElementById("graph-input") as HTMLInputElement;
     const funcText = funcInputElement.value;
-    const zFunc = Parser.parse(funcText).toJSFunction("x, y");
+    const zFunc = MathParser.parse(funcText);
     graphViewer.createGraph((x, y) => zFunc(x, y));
 }
 function drawCurve() {
     const funcInputElement = document.getElementById("curve-input") as HTMLInputElement;
     const funcText = funcInputElement.value;
-    const func = <(t: number) => Array<number>><unknown>Parser.parse(funcText).toJSFunction("t");
+    const func = <(t: number) => Array<number>><unknown>MathParser.parse(funcText);
     graphViewer.createCurve((t) => func(t));
 }
 
