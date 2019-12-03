@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "parcel dev index.html",
+    "start": "parcel dev index.html --host=141.22.69.73",
     "build": "npm run clean && parcel build index.html --no-source-maps -d public",
     "clean": "rimraf ./public",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -19,6 +19,7 @@
   "dependencies": {
     "expr-eval": "^2.0.2",
     "three": "^0.111.0",
-    "three-orbitcontrols": "^2.110.1"
+    "three-orbitcontrols": "^2.110.1",
+    "three-vrcontroller-module": "^1.0.5"
   }
 }

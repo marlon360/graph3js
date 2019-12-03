@@ -18,8 +18,14 @@ import {
     TubeGeometry,
     Curve,
     Object3D,
-    Group
+    Group,
+    MeshStandardMaterial,
+    CylinderGeometry,
+    BoxGeometry,
+    Matrix4
 } from 'three';
+
+import VRController from 'three-vrcontroller-module';
 
 import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
 
@@ -35,7 +41,25 @@ export class GraphViewer {
     renderer: WebGLRenderer;
     controls: OrbitControls;
 
+    vrGroup: Group;
+
     graphMesh = null;
+
+    triggerPressed = [];
+    startScale: Vector3;
+    startDistance = 0;
+
+    bothTriggerPressed = () => {
+        if (this.triggerPressed.length == 2) {
+            for(let i = 0; i < this.triggerPressed.length; i++) {
+                if (this.triggerPressed[i] == false) {
+                    return false;
+                }
+            };
+            return true;
+        }
+        return false;
+    }
 
     constructor(container: HTMLElement) {
 
@@ -56,9 +80,107 @@ export class GraphViewer {
 
             this.render();
             this.update();
-            //VRController.update();
+            VRController.update();
 
         });
+
+        //VRController.verbosity = 1;
+
+        window.addEventListener("vr controller connected", (event) => {
+
+            const id = this.triggerPressed.length;
+            this.triggerPressed.push(false);
+
+            //  Here it is, your VR controller instance.
+            //  It’s really a THREE.Object3D so you can just add it to your scene:
+            var controller = event.detail
+            this.scene.add(controller)
+
+
+            //  HEY HEY HEY! This is important. You need to make sure you do this.
+            //  For standing experiences (not seated) we need to set the standingMatrix
+            //  otherwise you’ll wonder why your controller appears on the floor
+            //  instead of in your hands! And for seated experiences this will have no
+            //  effect, so safe to do either way:
+
+            controller.standingMatrix = this.renderer.vr.getStandingMatrix()
+
+
+            //  And for 3DOF (seated) controllers you need to set the controller.head
+            //  to reference your camera. That way we can make an educated guess where
+            //  your hand ought to appear based on the camera’s rotation.
+
+            controller.head = this.camera
+
+
+            //  Right now your controller has no visual.
+            //  It’s just an empty THREE.Object3D.
+            //  Let’s fix that!
+
+            var
+                meshColorOff = 0xDB3236,//  Red.
+                meshColorOn = 0xF4C20D,//  Yellow.
+                controllerMaterial = new MeshStandardMaterial({
+
+                    color: meshColorOff
+                }),
+                controllerMesh = new Mesh(
+
+                    new CylinderGeometry(0.005, 0.05, 0.1, 6),
+                    controllerMaterial
+                ),
+                handleMesh = new Mesh(
+
+                    new BoxGeometry(0.03, 0.1, 0.03),
+                    controllerMaterial
+                )
+
+            controllerMaterial.flatShading = true
+            controllerMesh.rotation.x = -Math.PI / 2
+            handleMesh.position.y = -0.05
+            controllerMesh.add(handleMesh)
+            controller.userData.mesh = controllerMesh//  So we can change the color later.
+            controller.add(controllerMesh)
+
+            controller.addEventListener( 'primary press began',( event ) => {
+                this.triggerPressed[id] = true;
+                //this.graphMesh.scale.set(0.1,0.1,0.1);
+                event.target.userData.mesh.material.color.setHex( meshColorOn )
+
+                if(this.bothTriggerPressed()) {
+                    const controller1Position = new Vector3(VRController.controllers[0].position.x, VRController.controllers[0].position.y, VRController.controllers[0].position.z)
+                    const controller2Position = new Vector3(VRController.controllers[1].position.x, VRController.controllers[1].position.y, VRController.controllers[1].position.z)
+                    this.startDistance = controller1Position.distanceTo(controller2Position);
+                    this.startScale = new Vector3(this.graphMesh.scale.x, this.graphMesh.scale.y, this.graphMesh.scale.z);
+                    console.log(this.startDistance);
+                }
+
+            })
+            controller.addEventListener( 'primary press ended',( event ) => {
+                this.triggerPressed[id] = false;
+                event.target.userData.mesh.material.color.setHex( meshColorOff )
+            })
+
+            var tempMatrix = new Matrix4();
+            controller.addEventListener( 'grip press began',(event) => {
+                console.log("grip started");
+                tempMatrix.getInverse( controller.matrixWorld );
+				var object = this.graphMesh;
+				object.matrix.premultiply( tempMatrix );
+				object.matrix.decompose( object.position, object.quaternion, object.scale );
+				controller.add( object );
+                event.target.userData.mesh.material.color.setHex( meshColorOn )
+            })
+            controller.addEventListener( 'grip press ended',(event) => {
+                console.log("grip ended");
+                var object = this.graphMesh;
+					object.matrix.premultiply( controller.matrixWorld );
+					object.matrix.decompose( object.position, object.quaternion, object.scale );
+					this.scene.add( object );
+                event.target.userData.mesh.material.color.setHex( meshColorOn )
+            })
+
+        })
     }
 
     setupCamera(scene: Scene): PerspectiveCamera {
@@ -74,11 +196,11 @@ export class GraphViewer {
         camera.up = new Vector3(0, 1, 0);
         camera.lookAt(scene.position);
 
-        var user = new Group();
-        user.position.set(0, 0, 0);
-        user.rotateY(Math.PI);
-        scene.add(user);
-        user.add(camera);
+        // this.vrGroup = new Group();
+        // this.vrGroup.position.set(0, 0, 0);
+        // this.vrGroup.rotateY(Math.PI);
+        // scene.add(this.vrGroup);
+        // this.vrGroup.add(camera);
 
         return camera;
     }
@@ -123,6 +245,15 @@ export class GraphViewer {
 
     update() {
         this.controls.update();
+
+        if(this.bothTriggerPressed()) {
+            const controller1Position = new Vector3(VRController.controllers[0].position.x, VRController.controllers[0].position.y, VRController.controllers[0].position.z)
+            const controller2Position = new Vector3(VRController.controllers[1].position.x, VRController.controllers[1].position.y, VRController.controllers[1].position.z)
+            const currentDistance = controller1Position.distanceTo(controller2Position);
+            let delta = currentDistance - this.startDistance;
+            delta *= 1.2;
+            this.graphMesh.scale.set(this.startScale.x + delta, delta + this.startScale.y,delta + this.startScale.z);
+        }
     }
 
     render() {
