@@ -42,7 +42,7 @@ export class GraphViewer {
         this.setupFloor(this.scene);
         this.controls = this.setupControls(this.camera, this.renderer);
 
-        this.renderer.setClearColor(0xdddddd, 1);
+        this.renderer.setClearColor(0x474747, 1);
 
         this.animate();
     }
@@ -78,7 +78,7 @@ export class GraphViewer {
 
     setupFloor(scene: Scene) {
         scene.add(new AxesHelper());
-        var wireframeMaterial = new MeshBasicMaterial({ color: 0x2050ff, wireframe: true, side: DoubleSide });
+        var wireframeMaterial = new MeshBasicMaterial({ color: 0x787878, wireframe: true, side: DoubleSide });
         var floorGeometry = new PlaneGeometry(1000, 1000, 20, 20);
         var floor = new Mesh(floorGeometry, wireframeMaterial);
         floor.position.z = -0.01;
