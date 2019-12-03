@@ -16,7 +16,9 @@ import {
     VertexColors,
     Vector3, ParametricGeometry, Color, Face3,
     TubeGeometry,
-    Curve
+    Curve,
+    Object3D,
+    Group
 } from 'three';
 
 import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
@@ -38,16 +40,17 @@ export class GraphViewer {
     constructor(container: HTMLElement) {
 
         this.scene = new Scene();
-        this.camera = this.setupCamera(this.scene);
         this.renderer = this.setupRenderer(container);
         this.setupLight(this.scene);
         this.setupFloor(this.scene);
-        this.controls = this.setupControls(this.camera, this.renderer);
-
+        
         this.renderer.setClearColor(0x474747, 1);
-
+        
         document.body.appendChild( VRButton.createButton( this.renderer ) );
         this.renderer.vr.enabled = true;
+        
+        this.camera = this.setupCamera(this.scene);
+        this.controls = this.setupControls(this.camera, this.renderer);
 
         this.renderer.setAnimationLoop(() => {
 
@@ -55,7 +58,6 @@ export class GraphViewer {
             this.update();
         
         } );
-        //this.animate();
     }
 
     setupCamera(scene: Scene): PerspectiveCamera {
@@ -63,13 +65,19 @@ export class GraphViewer {
         const VIEW_ANGLE = 45;
         const ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT;
         const NEAR = 0.1;
-        const FAR = 20000;
+        const FAR = 1000;
 
         const camera = new PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
         scene.add(camera);
-        camera.position.set(24, 50, 20);
-        camera.up = new Vector3(0, 0, 1);
+        camera.position.set(0, 0, 0);
+        camera.up = new Vector3(0, 1, 0);
         camera.lookAt(scene.position);
+
+        var user = new Group();
+        user.position.set( 0, 0, 0 );
+        user.rotateY(Math.PI);
+        scene.add( user );
+        user.add( camera );
 
         return camera;
     }
@@ -92,6 +100,10 @@ export class GraphViewer {
         var wireframeMaterial = new MeshBasicMaterial({ color: 0x787878, wireframe: true, side: DoubleSide });
         var floorGeometry = new PlaneGeometry(1000, 1000, 20, 20);
         var floor = new Mesh(floorGeometry, wireframeMaterial);
+        floor.rotation.x = Math.PI * 0.5
+        // floor.rotation.y = Math.PI * 0.5
+        // floor.rotation.z = Math.PI
+
         floor.position.z = -0.01;
         scene.add(floor);
     }
@@ -202,40 +214,41 @@ export class GraphViewer {
         // set default values
         const xMin = setting && setting.xMin || -10,
             xMax = setting && setting.xMax || 10,
-            yMin = setting && setting.yMin || -10,
-            yMax = setting && setting.yMin || 10,
-            segments = setting && setting.segments || 40;
+            zMin = setting && setting.yMin || -10,
+            zMax = setting && setting.yMin || 10,
+            segments = setting && setting.segments || 400;
 
         // calculate ranges
         const xRange = xMax - xMin;
-        const yRange = yMax - yMin;
+        const zRange = zMax - zMin;
 
         // x and y from 0 to 1
-        const meshFunction = (x, y, vec3) => {
+        const meshFunction = (x, z, vec3) => {
             // map x,y to range
             x = xRange * x + xMin;
-            y = yRange * y + yMin;
+            z = zRange * z + zMin;
             // get z value from function
-            const z = func(x, y);
-            if (!isNaN(z))
+            const y = func(x, z);
+            if (!isNaN(y))
                 vec3.set(x, y, z);
         };
 
         const graphGeometry = new ParametricGeometry(meshFunction, segments, segments);
+        graphGeometry.scale(0.1,0.1,0.1);
 
         // set colors based on z value
         graphGeometry.computeBoundingBox();
-        const zMin = graphGeometry.boundingBox.min.z;
-        const zMax = graphGeometry.boundingBox.max.z;
-        const zRange = zMax - zMin;
+        const yMin = graphGeometry.boundingBox.min.y;
+        const yMax = graphGeometry.boundingBox.max.y;
+        const yRange = yMax - yMin;
 
         // first, assign colors to vertices
         for (var i = 0; i < graphGeometry.vertices.length; i++) {
             const point = graphGeometry.vertices[i];
             const color = new Color(0xffffff);
             // only change color if not infinte
-            if (isFinite(zRange)) {
-                color.setHSL(0.7 * (zMax - point.z) / zRange, 1, 0.5);
+            if (isFinite(yRange)) {
+                color.setHSL(0.7 * (yMax - point.y) / yRange, 1, 0.5);
             }
             graphGeometry.colors[i] = color;
         }
@@ -260,6 +273,7 @@ export class GraphViewer {
         }
 
         this.graphMesh = new Mesh(graphGeometry, wireMaterial);
+        this.graphMesh.position.set(0, 1.5, -2);
         this.scene.add(this.graphMesh);
     }
 
