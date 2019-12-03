@@ -43,12 +43,12 @@ export class GraphViewer {
         this.renderer = this.setupRenderer(container);
         this.setupLight(this.scene);
         this.setupFloor(this.scene);
-        
+
         this.renderer.setClearColor(0x474747, 1);
-        
-        document.body.appendChild( VRButton.createButton( this.renderer ) );
+
+        document.body.appendChild(VRButton.createButton(this.renderer));
         this.renderer.vr.enabled = true;
-        
+
         this.camera = this.setupCamera(this.scene);
         this.controls = this.setupControls(this.camera, this.renderer);
 
@@ -56,8 +56,9 @@ export class GraphViewer {
 
             this.render();
             this.update();
-        
-        } );
+            //VRController.update();
+
+        });
     }
 
     setupCamera(scene: Scene): PerspectiveCamera {
@@ -74,10 +75,10 @@ export class GraphViewer {
         camera.lookAt(scene.position);
 
         var user = new Group();
-        user.position.set( 0, 0, 0 );
+        user.position.set(0, 0, 0);
         user.rotateY(Math.PI);
-        scene.add( user );
-        user.add( camera );
+        scene.add(user);
+        user.add(camera);
 
         return camera;
     }
@@ -101,8 +102,6 @@ export class GraphViewer {
         var floorGeometry = new PlaneGeometry(1000, 1000, 20, 20);
         var floor = new Mesh(floorGeometry, wireframeMaterial);
         floor.rotation.x = Math.PI * 0.5
-        // floor.rotation.y = Math.PI * 0.5
-        // floor.rotation.z = Math.PI
 
         floor.position.z = -0.01;
         scene.add(floor);
@@ -137,27 +136,27 @@ export class GraphViewer {
         tMin: number,
         tMax: number,
     }) {
-         // set default values
-         const segments = setting && setting.segments || 100,
-         radiusSegments = setting && setting.radiusSegments || 6,
-         tubeRadius = setting && setting.tubeRadius ||0.1,
-         tMin = setting && setting.tMin || 0,
-         tMax = setting && setting.tMax || 60;
+        // set default values
+        const segments = setting && setting.segments || 100,
+            radiusSegments = setting && setting.radiusSegments || 6,
+            tubeRadius = setting && setting.tubeRadius || 0.1,
+            tMin = setting && setting.tMin || 0,
+            tMax = setting && setting.tMax || 60;
 
         const tRange = tMax - tMin;
 
-        function CustomPath (scale: number) {
+        function CustomPath(scale: number) {
             Curve.call(this);
             this.scale = scale;
         }
 
         CustomPath.prototype = Object.create(Curve.prototype);
         CustomPath.prototype.constructor = CustomPath;
-        CustomPath.prototype.getPoint = function(t: number) {
+        CustomPath.prototype.getPoint = function (t: number) {
             t = t * tRange + tMin;
 
             if (Array.isArray(func(t))) {
-                return new Vector3(func(t)[0],func(t)[1] || 0,func(t)[2] || 0).multiplyScalar(this.scale);
+                return new Vector3(func(t)[0], func(t)[1] || 0, func(t)[2] || 0).multiplyScalar(this.scale);
             } else {
                 // draw in xz plane a normal graph
                 return new Vector3(t, 0, <number>func(t)).multiplyScalar(this.scale);
@@ -167,7 +166,7 @@ export class GraphViewer {
         const path = new CustomPath(1);
 
         const tubeGeometry = new TubeGeometry(path, segments, tubeRadius, radiusSegments, false);
-        
+
         // vertex colors based on t value
         // faces are indexed using characters
         var faceIndices = ['a', 'b', 'c', 'd'];
@@ -199,7 +198,7 @@ export class GraphViewer {
         wireMaterial.map.repeat.set(segments, radiusSegments);
 
         this.graphMesh = new Mesh(tubeGeometry, wireMaterial);
-        this.graphMesh.doubleSided = true;        
+        this.graphMesh.doubleSided = true;
         this.scene.add(this.graphMesh);
     }
 
@@ -234,7 +233,7 @@ export class GraphViewer {
         };
 
         const graphGeometry = new ParametricGeometry(meshFunction, segments, segments);
-        graphGeometry.scale(0.1,0.1,0.1);
+        graphGeometry.scale(0.1, 0.1, 0.1);
 
         // set colors based on z value
         graphGeometry.computeBoundingBox();
@@ -273,7 +272,6 @@ export class GraphViewer {
         }
 
         this.graphMesh = new Mesh(graphGeometry, wireMaterial);
-        this.graphMesh.position.set(0, 1.5, -2);
         this.scene.add(this.graphMesh);
     }
 
