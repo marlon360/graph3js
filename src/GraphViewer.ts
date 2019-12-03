@@ -19,6 +19,8 @@ import {
     Curve
 } from 'three';
 
+import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
+
 import OrbitControls from 'three-orbitcontrols';
 
 // Constants
@@ -44,7 +46,16 @@ export class GraphViewer {
 
         this.renderer.setClearColor(0x474747, 1);
 
-        this.animate();
+        document.body.appendChild( VRButton.createButton( this.renderer ) );
+        this.renderer.vr.enabled = true;
+
+        this.renderer.setAnimationLoop(() => {
+
+            this.render();
+            this.update();
+        
+        } );
+        //this.animate();
     }
 
     setupCamera(scene: Scene): PerspectiveCamera {
